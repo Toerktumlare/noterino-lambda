@@ -1,0 +1,17 @@
+[package]
+name = "noterino-lambda"
+version = "0.1.0"
+edition = "2021"
+authors = ["thomas.andolf@gmail.com@gmail.com"]
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+aws-config = "0.51.0"
+aws-sdk-dynamodb = "0.21.0"
+env_logger = "0.10.0"
+lambda_runtime = "0.7.1"
+log = "0.4.17"
+serde = "1.0.148"
+tokio = { version = "1.22.0", features = ["full"] }
