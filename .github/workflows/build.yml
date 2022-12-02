@@ -16,6 +16,7 @@ jobs:
           rustup update
           rustup component add clippy
           rustup install nightly
+          sudo apt-get install -y musl
 
       - name: Toolchain info
         run: |
@@ -35,4 +36,4 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release
+          cargo build --release --target x86_64-unknown-linux-musl
