@@ -25,17 +25,14 @@ jobs:
 
       - name: Lint
         run: |
-          cd noterino-lambda
           cargo fmt -- --check
           cargo clippy -- -D warnings          
 
       - name: Test
         run: |
-          cd noterino-lambda
           cargo check
           cargo test --all
 
       - name: Build
         run: |
-          cd noterino-lambda
           cargo build --release --target x86_64-unknown-linux-musl
