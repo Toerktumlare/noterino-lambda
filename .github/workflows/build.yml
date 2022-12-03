@@ -8,6 +8,9 @@ on:
 jobs:
   pipeline:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v2
 
@@ -23,7 +26,9 @@ jobs:
         run: |
           cargo --version --verbose
           rustc --version
-          cargo clippy --version          
+          cargo clippy --version
+          aws --version
+          sam --version
 
       - name: Lint
         run: |
@@ -38,3 +43,8 @@ jobs:
       - name: Build
         run: |
           cargo build --release --target x86_64-unknown-linux-musl
+      - name: "Configure AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::314475275737:role/noterino-deployment-role
+          aws-region: ${{ env.AWS_REGION }}
