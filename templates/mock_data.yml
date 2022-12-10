@@ -1,0 +1,78 @@
+RequestItems: 
+  notes:
+    - PutRequest:
+        Item:
+          PK: 
+            S: document
+          SK:
+            S: DOCUMENT#1669928534
+          created:
+            N: "1669928534"
+          description:
+            S: "A lot of cmd commands"
+          isDefault:
+            BOOL: true
+          lastUpdate:
+            N: "1669928534"
+          title:
+            S: "Commands"
+          updatedBy:
+            S: "Hydrogen:Thomas"
+    - PutRequest:
+        Item:
+          PK: 
+            S: document
+          SK:
+            S: "DOCUMENT1669928535"
+          created:
+            N: "1669928535"
+          description:
+            S: "Some cool books"
+          isDefault:
+            BOOL: false
+          lastUpdate:
+            N: "1669928535"
+          text:
+            S: "Books"
+          updatedBy:
+            S: "Hydrogen:Thomas"
+    - PutRequest:
+        Item:
+          PK: 
+            S: groups
+          SK:
+            S: "GROUP#1669928536"
+          created:
+            N: "1669928536"
+          description:
+            S: "Some cool docker commands"
+          isDefault:
+            BOOL: false
+          lastUpdate:
+            N: "1669928535"
+          text:
+            S: "Docker Commands"
+          updatedBy:
+            S: "Hydrogen:Thomas"
+          parent:
+            S: "DOCUMENT#1669928536"
+    - PutRequest:
+        Item:
+          PK: 
+            S: notes
+          SK:
+            S: "NOTE#1669928536"
+          created:
+            N: "1669928536"
+          description:
+            S: "Some cool commands"
+          isDefault:
+            BOOL: false
+          lastUpdate:
+            N: "1669928535"
+          text:
+            S: "docker start"
+          updatedBy:
+            S: "Hydrogen:Thomas"
+          parent:
+            S: "GROUP#1669928536"

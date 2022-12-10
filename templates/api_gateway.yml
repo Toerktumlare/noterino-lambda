@@ -1,0 +1,13 @@
+Type: AWS::ApiGateway::RestApi
+Properties:
+  ApiKeySourceType: HEADER
+  EndpointConfiguration:
+    Types: REGIONAL
+  Name: noterino
+  Resources:
+    notes:
+    Type: AWS::ApiGateWay::RestApi
+    Properties:
+
+
+

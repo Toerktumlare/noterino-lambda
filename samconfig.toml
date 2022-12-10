@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "noterino-stack"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-qy1alg81avxo"
+s3_prefix = "noterino-stack"
+region = "eu-north-1"
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "TABLENAME=\"notes\" REGIONNAME=\"us-north-1\""
+image_repositories = []

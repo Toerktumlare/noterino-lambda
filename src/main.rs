@@ -1,64 +1,56 @@
 use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_dynamodb::Client;
-use lambda_runtime::{service_fn, Error, LambdaEvent};
-use log::{error, info};
-use serde::{Deserialize, Serialize};
+use aws_sdk_dynamodb::{Client, Endpoint};
+use lambda_http::{
+    aws_lambda_events::serde_json, http::Uri, run, service_fn, Body, Error, Request, Response,
+};
+use serde::Serialize;
+use tokio_stream::StreamExt;
 
-#[derive(Deserialize)]
-struct Request {}
-
-#[derive(Debug, Serialize)]
-struct SuccessResponse {
-    pub body: String,
+#[derive(Serialize)]
+pub struct TableResponse {
+    table_names: Vec<String>,
 }
-
-#[derive(Debug, Serialize)]
-struct FailureResponse {
-    pub body: String,
-}
-
-impl std::fmt::Display for FailureResponse {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.body)
-    }
-}
-
-impl std::error::Error for FailureResponse {}
-
-type Response = Result<SuccessResponse, FailureResponse>;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    env_logger::init();
-    let func = service_fn(handler);
-    lambda_runtime::run(func).await?;
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_target(false)
+        .without_time()
+        .init();
+    run(service_fn(handler)).await?;
 
     Ok(())
 }
 
-async fn handler(_event: LambdaEvent<Request>) -> Response {
-    let region_provider = RegionProviderChain::default_provider().or_else("eu-north-1");
-    let config = aws_config::from_env().region(region_provider).load().await;
+pub async fn list_tables(client: &Client) -> Result<Vec<String>, Error> {
+    let paginator = client.list_tables().into_paginator().items().send();
+    let table_names = paginator.collect::<Result<Vec<_>, _>>().await?;
+    Ok(table_names)
+}
+
+async fn handler(_event: Request) -> Result<Response<Body>, Error> {
+    let _region_provider = RegionProviderChain::default_provider().or_else("us-north-1");
+    let config = aws_config::from_env()
+        .endpoint_resolver(Endpoint::immutable(Uri::from_static(
+            "http://172.17.0.1:8000",
+        )))
+        .load()
+        .await;
     let client = Client::new(&config);
 
-    let response = client.list_tables().send().await.map_err(|err| {
-        error!("Failed to fetch tables, error: {err}");
-        FailureResponse {
-            body: "Could not fetch tables".to_owned(),
-        }
-    })?;
+    let tables = list_tables(&client).await?;
 
-    info!("Tables:");
+    let table_response = TableResponse {
+        table_names: tables,
+    };
 
-    let names = response.table_names().unwrap_or_default();
+    let body = serde_json::to_string(&table_response)?;
 
-    for name in names {
-        info!("   {name}");
-    }
-
-    info!("Found {} tables", names.len());
-
-    Ok(SuccessResponse {
-        body: format!("Number of tables found: {}", names.len()),
-    })
+    let response = Response::builder()
+        .status(200)
+        .header("content-type", "application/json")
+        .body(body.into())
+        .unwrap();
+    Ok(response)
 }

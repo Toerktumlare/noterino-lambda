@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Serverless Specification template describing your function.
+
+Parameters:
+  TABLENAME:
+    Type: String
+    Description: The DynamoDB table for storing notes.
+    Default: 'notes'
+
+  REGIONNAME:
+    Type: String
+    Description: Default region for deployment.
+    Default: 'us-north-1'
+
+Resources:
+  NoterinoAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Tags:
+        noterino: api
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'content-type'"
+        AllowOrigin: "'*'"
+        AllowCredentials: false
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan:
+          UsagePlanName: Basic
+          CreateUsagePlan: PER_API
+          Description: "Usage plan for noterino"
+          Quota:
+            Limit: 500
+            Period: MONTH
+          Throttle:
+            BurstLimit: 50
+            RateLimit: 20
+          Tags:
+            - Key: noterino
+              Value: usageplan
+
+  NoterinoLambda:
+    Type: 'AWS::Serverless::Function'
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      Handler: bootstrap
+      Runtime: provided.al2
+      CodeUri: .
+      Description: ''
+      MemorySize: 128
+      Timeout: 3
+      Role: >-
+        arn:aws:iam::314475275737:role/service-role/noterino-lambda-role-3idguuad
+      Environment:
+        Variables:
+          RUST_LOG: info
+          TABLE_NAME: !Ref TABLENAME
+          REGION_NAME: !Ref REGIONNAME
+      Tags:
+        noterino: lambda
+      Events:
+        postDocuments:
+          Type: Api
+          Properties:
+            Path: /notes/documents
+            Method: POST
+            RestApiId: !Ref NoterinoAPI
+        getDocuments:
+          Type: Api
+          Properties:
+            Path: /notes/documents
+            Method: GET
+            RestApiId: !Ref NoterinoAPI
+        getDocument:
+          Type: Api
+          Properties:
+            Path: /notes/documents/{id}
+            Method: GET
+            RestApiId: !Ref NoterinoAPI
+        postDocument:
+          Type: Api
+          Properties:
+            Path: /notes/documents/{id}
+            Method: POST
+            RestApiId: !Ref NoterinoAPI
+
+  NoterinoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TABLENAME
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S

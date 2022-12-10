@@ -9,3 +9,11 @@ Features:
 - [ ] `POST /document`
 - [ ] `GET /document`
 - [ ] `POST /document`
+
+Pipeline:
+- [ ] upsert env using template
+
+Test
+- [ ] script for starting environment (function app and docker image)
+- [ ] provision tables in dynamoDB local
+- [ ] create test data in local dynamoDB
