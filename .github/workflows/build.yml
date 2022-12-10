@@ -13,7 +13,12 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v2
-
+      - uses: aws-actions/setup-sam@v2
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
       - name: Update local toolchain
         run: |
           rustup update
@@ -42,17 +47,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-unknown-linux-musl
-      - name: "Configure AWS Credentials"
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: package artifact
+          sam build
+      - name: deploy stack
         run: |
-          cd target/x86_64-unknown-linux-musl/release/
-          mv noterino-lambda bootstrap
-          zip lambda.zip bootstrap
-      - name: deploy artifact
-        run: aws lambda update-function-code --function-name noterino-lambda --zip-file fileb://./target/x86_64-unknown-linux-musl/release/lambda.zip
+          sam deploy
