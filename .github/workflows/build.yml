@@ -50,4 +50,4 @@ jobs:
           sam build
       - name: deploy stack
         run: |
-          sam deploy
+          sam deploy --debug
