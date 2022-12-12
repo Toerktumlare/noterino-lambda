@@ -1,14 +1,14 @@
-use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_dynamodb::{Client, Endpoint};
-use lambda_http::{
-    aws_lambda_events::serde_json, http::Uri, run, service_fn, Body, Error, Request, Response,
-};
+use aws_sdk_dynamodb::{model::AttributeValue, Client};
+use lambda_http::{aws_lambda_events::serde_json, run, service_fn, Body, Error, Request, Response};
 use serde::Serialize;
 use tokio_stream::StreamExt;
+use tracing::info;
+
+mod config;
 
 #[derive(Serialize)]
 pub struct TableResponse {
-    table_names: Vec<String>,
+    size: i32,
 }
 
 #[tokio::main]
@@ -19,7 +19,6 @@ async fn main() -> Result<(), Error> {
         .without_time()
         .init();
     run(service_fn(handler)).await?;
-
     Ok(())
 }
 
@@ -30,20 +29,26 @@ pub async fn list_tables(client: &Client) -> Result<Vec<String>, Error> {
 }
 
 async fn handler(_event: Request) -> Result<Response<Body>, Error> {
-    let _region_provider = RegionProviderChain::default_provider().or_else("us-north-1");
-    let config = aws_config::from_env()
-        .endpoint_resolver(Endpoint::immutable(Uri::from_static(
-            "http://172.17.0.1:8000",
-        )))
-        .load()
-        .await;
+    let config = config::load_config().await;
+    let table_name =
+        std::env::var("TABLE_NAME").expect("A TABLE_NAME must be set in this app's Lambda");
     let client = Client::new(&config);
+    info!("Table name: ");
+    info!(table_name);
 
-    let tables = list_tables(&client).await?;
+    let values = client
+        .query()
+        .table_name("notes")
+        .consistent_read(true)
+        .key_condition_expression("PK = :hashKey")
+        .expression_attribute_values(":hashKey", AttributeValue::S("document".to_string()))
+        .send()
+        .await
+        .unwrap();
 
-    let table_response = TableResponse {
-        table_names: tables,
-    };
+    let size = values.count();
+
+    let table_response = TableResponse { size };
 
     let body = serde_json::to_string(&table_response)?;
 

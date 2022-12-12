@@ -18,6 +18,7 @@ tokio = { version = "1.22.0", features = ["macros"] }
 tokio-stream = "0.1"
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt"] }
+structopt = "0.3.26"
 
 [[bin]]
 name = "bootstrap"
