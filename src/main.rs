@@ -4,9 +4,6 @@ use serde::Serialize;
 use tokio_stream::StreamExt;
 
 mod config;
-mod controllers;
-mod repositories;
-mod services;
 
 #[derive(Serialize)]
 pub struct DocumentEntity {
