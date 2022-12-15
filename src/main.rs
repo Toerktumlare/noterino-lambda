@@ -82,18 +82,12 @@ async fn handler(_event: Request) -> Result<Response<Body>, Error> {
     Ok(response)
 }
 
-pub fn get_string(v: &AttributeValue) -> String {
-    if let AttributeValue::S(value) = v {
-        value.to_owned()
-    } else {
-        "".to_string()
-    }
+pub fn get_string(value: &AttributeValue) -> String {
+    let value = value.as_s().unwrap().to_owned();
+    value
 }
 
 pub fn get_number(v: &AttributeValue) -> u32 {
-    if let AttributeValue::N(value) = v {
-        value.parse().unwrap()
-    } else {
-        0
-    }
+    let number: u32 = v.as_n().unwrap().parse().unwrap();
+    number
 }
