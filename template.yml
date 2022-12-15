@@ -17,7 +17,7 @@ Resources:
   NoterinoAPI:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: Prod
+      StageName: api
       Tags:
         noterino: api
       Cors:
