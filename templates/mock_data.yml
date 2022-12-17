@@ -23,7 +23,7 @@ RequestItems:
           PK: 
             S: document
           SK:
-            S: "DOCUMENT1669928535"
+            S: "DOCUMENT#1669928535"
           created:
             N: "1669928535"
           description:
@@ -39,7 +39,7 @@ RequestItems:
     - PutRequest:
         Item:
           PK: 
-            S: groups
+            S: group
           SK:
             S: "GROUP#1669928536"
           created:
@@ -55,11 +55,51 @@ RequestItems:
           updatedBy:
             S: "Hydrogen:Thomas"
           parent:
-            S: "DOCUMENT#1669928536"
+            S: "DOCUMENT#1669928534"
     - PutRequest:
         Item:
           PK: 
-            S: notes
+            S: group
+          SK:
+            S: "GROUP#1669928537"
+          created:
+            N: "1669928536"
+          description:
+            S: "All the commands you need for AWS Cli"
+          isDefault:
+            BOOL: false
+          lastUpdate:
+            N: "1669928535"
+          title:
+            S: "AWS CLI Commands"
+          updatedBy:
+            S: "Hydrogen:Thomas"
+          parent:
+            S: "DOCUMENT#1669928534"
+    - PutRequest:
+        Item:
+          PK: 
+            S: group
+          SK:
+            S: "GROUP#1669928538"
+          created:
+            N: "1669928536"
+          description:
+            S: "You should really read this book, Hackers super mega book."
+          isDefault:
+            BOOL: false
+          lastUpdate:
+            N: "1669928535"
+          title:
+            S: "Technical Books"
+          updatedBy:
+            S: "Hydrogen:Thomas"
+          parent:
+            S: "DOCUMENT#1669928535"
+    - PutRequest:
+        Item:
+          PK: 
+            S: note
           SK:
             S: "NOTE#1669928536"
           created:

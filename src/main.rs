@@ -1,18 +1,14 @@
 use aws_sdk_dynamodb::{model::AttributeValue, Client};
-use lambda_http::{aws_lambda_events::serde_json, run, service_fn, Body, Error, Request, Response};
-use serde::Serialize;
+use lambda_http::{
+    aws_lambda_events::serde_json, http::Method, run, service_fn, Body, Error, Request, Response,
+};
+use repositories::DatabaseRepository;
+use services::{Document, DocumentService};
 use tokio_stream::StreamExt;
 
 mod config;
-
-#[derive(Serialize)]
-pub struct DocumentEntity {
-    title: String,
-    description: String,
-    created: u32,
-    #[serde(rename(serialize = "updatedBy"))]
-    updated_by: String,
-}
+mod repositories;
+mod services;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -31,63 +27,32 @@ pub async fn list_tables(client: &Client) -> Result<Vec<String>, Error> {
     Ok(table_names)
 }
 
-async fn handler(_event: Request) -> Result<Response<Body>, Error> {
+async fn handler(event: Request) -> Result<Response<Body>, Error> {
     let config = config::load_config().await;
-    let table_name =
-        std::env::var("TABLE_NAME").expect("A TABLE_NAME must be set in this app's Lambda");
     let client = Client::new(&config);
-    let (parts, _) = _event.into_parts();
+    let database_repository = DatabaseRepository::from_client(client);
+    let (parts, _) = event.into_parts();
     let path = parts.uri.path();
+    let method = parts.method;
 
     let response = match path {
-        "/api/notes/documents" => {
-            let req = client
-                .query()
-                .table_name(&table_name)
-                .key_condition_expression("PK = :hashKey")
-                .expression_attribute_values(":hashKey", AttributeValue::S("document".to_string()))
-                .send()
-                .await
-                .unwrap();
+        "/api/notes/documents" => match method {
+            Method::GET => {
+                let document_service = DocumentService::new(database_repository);
+                let documents: Vec<Document> = document_service.list_all().await;
 
-            let items = req.items().unwrap();
+                let body = serde_json::to_string(&documents)?;
 
-            let documents: Vec<DocumentEntity> = items
-                .iter()
-                .map(|item| {
-                    dbg!(&item["title"]);
-                    let title = get_string(&item["title"]);
-                    let description = get_string(&item["description"]);
-                    let updated_by = get_string(&item["updatedBy"]);
-                    let created = get_number(&item["created"]);
-                    DocumentEntity {
-                        title,
-                        description,
-                        created,
-                        updated_by,
-                    }
-                })
-                .collect();
-            let body = serde_json::to_string(&documents)?;
-
-            Response::builder()
-                .status(200)
-                .header("content-type", "application/json")
-                .body(body.into())
-                .unwrap()
-        }
+                Response::builder()
+                    .status(200)
+                    .header("content-type", "application/json")
+                    .body(body.into())
+                    .unwrap()
+            }
+            _ => Response::builder().status(405).body(Body::Empty).unwrap(),
+        },
         _ => Response::builder().status(404).body(Body::Empty).unwrap(),
     };
 
     Ok(response)
-}
-
-pub fn get_string(value: &AttributeValue) -> String {
-    let value = value.as_s().unwrap().to_owned();
-    value
-}
-
-pub fn get_number(v: &AttributeValue) -> u32 {
-    let number: u32 = v.as_n().unwrap().parse().unwrap();
-    number
 }
