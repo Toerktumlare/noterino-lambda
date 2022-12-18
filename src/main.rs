@@ -33,16 +33,32 @@ async fn handler(event: Request) -> Result<Response<Body>, Error> {
     let database_repository = DatabaseRepository::from_client(client);
     let (parts, _) = event.into_parts();
     let path = parts.uri.path();
+    let path = path.split('/').last().unwrap();
     let method = parts.method;
+    dbg!(path);
 
     let response = match path {
-        "/api/notes/documents" => match method {
+        "" => match method {
             Method::GET => {
                 let document_service = DocumentService::new(database_repository);
                 let documents: Vec<Document> = document_service.list_all().await;
 
                 let body = serde_json::to_string(&documents)?;
 
+                Response::builder()
+                    .status(200)
+                    .header("content-type", "application/json")
+                    .body(body.into())
+                    .unwrap()
+            }
+            _ => Response::builder().status(405).body(Body::Empty).unwrap(),
+        },
+        id if !id.is_empty() => match method {
+            Method::GET => {
+                let document_service = DocumentService::new(database_repository);
+                let document = document_service.fetch_by_id(id).await;
+
+                let body = serde_json::to_string(&document)?;
                 Response::builder()
                     .status(200)
                     .header("content-type", "application/json")
