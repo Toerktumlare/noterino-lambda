@@ -857,6 +857,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "multimap"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "nanoserde"
+version = "0.1.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "755e7965536bc54d7c9fba2df5ada5bf835b0443fd613f0a53fa199a301839d3"
+dependencies = [
+ "nanoserde-derive",
+]
+
+[[package]]
+name = "nanoserde-derive"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed7a94da6c6181c35d043fc61c43ac96d3a5d739e7b8027f77650ba41504d6ab"
+
+[[package]]
 name = "noterino_lambda"
 version = "0.1.0"
 dependencies = [
@@ -864,7 +888,8 @@ dependencies = [
  "aws-sdk-dynamodb",
  "lambda_http",
  "lambda_runtime",
- "serde",
+ "multimap",
+ "nanoserde",
  "structopt",
  "tokio",
  "tokio-stream",

@@ -1,7 +1,6 @@
-use aws_sdk_dynamodb::{model::AttributeValue, Client};
-use lambda_http::{
-    aws_lambda_events::serde_json, http::Method, run, service_fn, Body, Error, Request, Response,
-};
+use aws_sdk_dynamodb::Client;
+use lambda_http::{http::Method, run, service_fn, Body, Error, Request, Response};
+use nanoserde::SerJson;
 use repositories::DatabaseRepository;
 use services::{Document, DocumentService};
 use tokio_stream::StreamExt;
@@ -43,7 +42,7 @@ async fn handler(event: Request) -> Result<Response<Body>, Error> {
                 let document_service = DocumentService::new(database_repository);
                 let documents: Vec<Document> = document_service.list_all().await;
 
-                let body = serde_json::to_string(&documents)?;
+                let body = SerJson::serialize_json(&documents);
 
                 Response::builder()
                     .status(200)
@@ -58,7 +57,7 @@ async fn handler(event: Request) -> Result<Response<Body>, Error> {
                 let document_service = DocumentService::new(database_repository);
                 let document = document_service.fetch_by_id(id).await;
 
-                let body = serde_json::to_string(&document)?;
+                let body = SerJson::serialize_json(&document);
                 Response::builder()
                     .status(200)
                     .header("content-type", "application/json")
