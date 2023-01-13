@@ -20,6 +20,7 @@ tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt"] }
 structopt = "0.3.26"
 multimap = "0.8.3"
+matchit = "0.7.0"
 
 [[bin]]
 name = "bootstrap"
