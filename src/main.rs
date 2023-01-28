@@ -29,7 +29,6 @@ async fn handler(event: Request) -> Result<Response<Body>, Error> {
     let config = config::load_config().await;
     let client = Client::new(&config);
     let (parts, _) = event.into_parts();
-    let path = parts.uri.path();
 
     let router = RouterDelegate::new(client);
     let response = router.handle(&parts).await;

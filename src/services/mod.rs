@@ -123,7 +123,7 @@ impl From<&HashMap<String, AttributeValue>> for Note {
     }
 }
 
-struct Documents(Vec<Document>);
+pub struct Documents(Vec<Document>);
 
 impl Documents {
     fn new() -> Self {
@@ -166,7 +166,7 @@ impl From<Vec<HashMap<String, AttributeValue>>> for Documents {
             for group in groups {
                 let mut group = Group::from(group);
                 if let Some(notes) = lookup.get_vec(&group.sk) {
-                    let notes: Vec<Note> = notes.iter().map(|note| Note::from(note)).collect();
+                    let notes: Vec<Note> = notes.iter().map(Note::from).collect();
                     group.set_notes(notes);
                 }
                 document.add_group(group);
@@ -189,13 +189,11 @@ impl DocumentService {
 
     pub async fn list_all(&self) -> Documents {
         let items = self.database_repository.list_all().await;
-        let documents = Documents::from(items);
-        documents
+        Documents::from(items)
     }
 
     pub(crate) async fn fetch_by_id(&self, id: &str) -> Document {
         let item = self.database_repository.fetch_by_id(id).await;
-        let documents = Document::from(item);
-        documents
+        Document::from(item)
     }
 }
