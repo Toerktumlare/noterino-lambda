@@ -126,6 +126,7 @@ impl From<&HashMap<String, AttributeValue>> for Note {
     }
 }
 
+#[derive(SerJson, Clone)]
 pub struct Documents(Vec<Document>);
 
 impl Documents {

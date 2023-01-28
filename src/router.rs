@@ -50,7 +50,7 @@ impl RouterDelegate {
             HttpRoute::Documents => match method {
                 &Method::GET => {
                     let documents = self.document_service.list_all().await;
-                    let body = SerJson::serialize_json(&documents.to_vec());
+                    let body = SerJson::serialize_json(&documents);
                     Response::builder()
                         .status(200)
                         .header("content-type", "application/json")
