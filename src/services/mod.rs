@@ -1,4 +1,7 @@
-use std::{collections::HashMap, ops::{Deref, DerefMut}};
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 use aws_sdk_dynamodb::model::AttributeValue;
 
@@ -140,7 +143,6 @@ impl Deref for Documents {
 }
 
 impl DerefMut for Documents {
-
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -159,7 +161,7 @@ impl From<Vec<HashMap<String, AttributeValue>>> for Documents {
                 documents.push(document);
             }
         }
-         
+
         for document in documents.iter_mut() {
             let groups = lookup.get_vec(&document.sk).unwrap();
 

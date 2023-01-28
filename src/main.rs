@@ -5,8 +5,8 @@ use tokio_stream::StreamExt;
 
 mod config;
 mod repositories;
-mod services;
 mod router;
+mod services;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
