@@ -27,7 +27,7 @@ impl DatabaseRepository {
         items.to_vec()
     }
 
-    pub(crate) async fn fetch_by_id(&self, id: &str) -> Vec<HashMap<String, AttributeValue>> {
+    pub(crate) async fn fetch_by_id(&self, id: &str) -> HashMap<String, AttributeValue> {
         let mut sk = String::from("DOCUMENT#");
         let mut notes_sk = String::from("GROUP#");
         sk.push_str(id);
@@ -73,12 +73,22 @@ impl DatabaseRepository {
             .await
             .unwrap();
 
-        let response = response.item().unwrap().to_owned();
+        let response = response.item().unwrap();
+
         let mut groups = groups.items().unwrap().to_vec();
         let mut notes = notes.items().unwrap().to_vec();
-        groups.push(response);
+
         groups.append(&mut notes);
-        dbg!(&groups);
-        groups
+        groups.push(response.to_owned());
+
+        let mut values = HashMap::new();
+
+        for hash in groups {
+            for (k, v) in hash {
+                values.insert(k, v);
+            }
+        }
+
+        values
     }
 }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, ops::{Deref, DerefMut}};
 
 use aws_sdk_dynamodb::model::AttributeValue;
 
@@ -139,6 +139,13 @@ impl Deref for Documents {
     }
 }
 
+impl DerefMut for Documents {
+
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl From<Vec<HashMap<String, AttributeValue>>> for Documents {
     fn from(items: Vec<HashMap<String, AttributeValue>>) -> Self {
         let mut lookup = MultiMap::new();
@@ -146,7 +153,7 @@ impl From<Vec<HashMap<String, AttributeValue>>> for Documents {
         for item in items {
             if item.contains_key(PARENT) {
                 let value = item[PARENT].as_s().unwrap();
-                lookup.insert(value, item);
+                lookup.insert(value.clone(), item);
             } else {
                 let document = Document::from(item);
                 documents.push(document);
@@ -187,57 +194,8 @@ impl DocumentService {
     }
 
     pub(crate) async fn fetch_by_id(&self, id: &str) -> Document {
-        let items = self.database_repository.fetch_by_id(id).await;
-
-        let filtered_documents: Vec<&HashMap<String, AttributeValue>> = items
-            .iter()
-            .filter(|item| item["PK"].as_s().unwrap() == "document")
-            .collect();
-
-        let groups: Vec<&HashMap<String, AttributeValue>> = items
-            .iter()
-            .filter(|item| item["PK"].as_s().unwrap() == "group")
-            .collect();
-
-        let notes: Vec<&HashMap<String, AttributeValue>> = items
-            .iter()
-            .filter(|item| item["PK"].as_s().unwrap() == "note")
-            .collect();
-
-        let documents: Vec<Document> = filtered_documents
-            .iter()
-            .map(|item| {
-                let sk = item["SK"].as_s().unwrap();
-                let groups: Vec<Group> = groups
-                    .iter()
-                    .filter(|group| {
-                        let parent = group["parent"].as_s().unwrap();
-                        parent == sk
-                    })
-                    .map(|group| {
-                        let group_sk = group[SK].as_s().unwrap();
-                        let notes = notes
-                            .iter()
-                            .filter(|note| {
-                                let parent = note["parent"].as_s().unwrap();
-                                parent == group_sk
-                            })
-                            .map(|note| {
-                                let title = note["title"].as_s().unwrap().clone();
-                                let created: u32 =
-                                    note["created"].as_n().unwrap().clone().parse().unwrap();
-                                Note { title, created }
-                            })
-                            .collect();
-                        let mut group = Group::from(*group);
-                        group.set_notes(notes);
-                        group
-                    })
-                    .collect();
-                Document::from(*item)
-            })
-            .collect();
-        let doc = documents.first().unwrap();
-        doc.clone()
+        let item = self.database_repository.fetch_by_id(id).await;
+        let documents = Document::from(item);
+        documents
     }
 }
