@@ -20,8 +20,8 @@ impl RouterDelegate {
         let database = DatabaseRepository::from_client(client);
         let document_service = DocumentService::new(database);
         let mut router = Router::new();
-        router.insert("/api/notes/documents", HttpRoute::Documents);
-        router.insert("/api/notes/documents/:id", HttpRoute::Document);
+        router.insert("/api/notes/documents", HttpRoute::Documents).unwrap();
+        router.insert("/api/notes/documents/:id", HttpRoute::Document).unwrap();
         Self { router, document_service }
     }
 
@@ -41,7 +41,7 @@ impl RouterDelegate {
                 match method {
                     &Method::GET => {
                         let documents = self.document_service.list_all().await;
-                        let body = SerJson::serialize_json(&documents);
+                        let body = SerJson::serialize_json(&documents.to_vec());
                         Response::builder()
                             .status(200)
                             .header("content-type", "application/json")
@@ -69,5 +69,4 @@ impl RouterDelegate {
         };
         response
     }
-
 }

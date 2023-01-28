@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 
 use aws_sdk_dynamodb::model::AttributeValue;
 
@@ -53,8 +53,8 @@ impl Document {
     }
 }
 
-impl From<&HashMap<String, AttributeValue>> for Document {
-    fn from(group_entity: &HashMap<String, AttributeValue>) -> Self {
+impl From<HashMap<String, AttributeValue>> for Document {
+    fn from(group_entity: HashMap<String, AttributeValue>) -> Self {
         let pk = group_entity[PK].as_s().unwrap().to_owned();
         let sk = group_entity[SK].as_s().unwrap().to_owned();
         let title = group_entity[TITLE].as_s().unwrap().to_owned();
@@ -123,6 +123,52 @@ impl From<&HashMap<String, AttributeValue>> for Note {
     }
 }
 
+struct Documents(Vec<Document>);
+
+impl Documents {
+    fn new() -> Self {
+        Documents(Vec::new())
+    }
+}
+
+impl Deref for Documents {
+    type Target = Vec<Document>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<Vec<HashMap<String, AttributeValue>>> for Documents {
+    fn from(items: Vec<HashMap<String, AttributeValue>>) -> Self {
+        let mut lookup = MultiMap::new();
+        let mut documents = Documents::new();
+        for item in items {
+            if item.contains_key(PARENT) {
+                let value = item[PARENT].as_s().unwrap();
+                lookup.insert(value, item);
+            } else {
+                let document = Document::from(item);
+                documents.push(document);
+            }
+        }
+         
+        for document in documents.iter_mut() {
+            let groups = lookup.get_vec(&document.sk).unwrap();
+
+            for group in groups {
+                let mut group = Group::from(group);
+                if let Some(notes) = lookup.get_vec(&group.sk) {
+                    let notes: Vec<Note> = notes.iter().map(|note| Note::from(note)).collect();
+                    group.set_notes(notes);
+                }
+                document.add_group(group);
+            }
+        }
+        documents
+    }
+}
+
 pub struct DocumentService {
     database_repository: DatabaseRepository,
 }
@@ -134,32 +180,9 @@ impl DocumentService {
         }
     }
 
-    pub async fn list_all(&self) -> Vec<Document> {
+    pub async fn list_all(&self) -> Documents {
         let items = self.database_repository.list_all().await;
-        let mut lookup = MultiMap::new();
-        let mut documents = Vec::new();
-        for item in items.iter() {
-            if item.contains_key(PARENT) {
-                let value = item[PARENT].as_s().unwrap();
-                lookup.insert(value, item);
-            } else {
-                let document = Document::from(item);
-                documents.push(document);
-            }
-        }
-
-        for document in documents.iter_mut() {
-            let groups = lookup.get_vec(&document.sk).unwrap();
-
-            for group in groups.iter() {
-                let mut group = Group::from(*group);
-                if let Some(notes) = lookup.get_vec(&group.sk) {
-                    let notes: Vec<Note> = notes.iter().map(|note| Note::from(*note)).collect();
-                    group.set_notes(notes);
-                }
-                document.add_group(group);
-            }
-        }
+        let documents = Documents::from(items);
         documents
     }
 
