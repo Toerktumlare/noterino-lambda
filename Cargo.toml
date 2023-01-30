@@ -21,6 +21,7 @@ tracing-subscriber = { version = "0.3", default-features = false, features = ["f
 structopt = "0.3.26"
 multimap = "0.8.3"
 matchit = "0.7.0"
+chrono = "0.4.23"
 
 [[bin]]
 name = "bootstrap"

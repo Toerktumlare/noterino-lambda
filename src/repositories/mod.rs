@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use aws_sdk_dynamodb::{model::AttributeValue, Client};
+use aws_sdk_dynamodb::{model::AttributeValue, Client, Error};
+use chrono::Utc;
+
+use crate::services::{PK, SK, TITLE, DocumentReq, UPDATED_BY, CREATED, DESCRIPTION};
 
 pub struct DatabaseRepository {
     client: Client,
@@ -27,7 +30,7 @@ impl DatabaseRepository {
         items.to_vec()
     }
 
-    pub(crate) async fn fetch_by_id(&self, id: &str) -> HashMap<String, AttributeValue> {
+    pub(crate) async fn fetch_by_id(&self, id: &str) -> Vec<HashMap<String, AttributeValue>> {
         let mut sk = String::from("DOCUMENT#");
         let mut notes_sk = String::from("GROUP#");
         sk.push_str(id);
@@ -75,20 +78,39 @@ impl DatabaseRepository {
 
         let response = response.item().unwrap();
 
-        let mut groups = groups.items().unwrap().to_vec();
+        let mut document = groups.items().unwrap().to_vec();
         let mut notes = notes.items().unwrap().to_vec();
 
-        groups.append(&mut notes);
-        groups.push(response.to_owned());
+        document.append(&mut notes);
+        document.push(response.to_owned());
 
-        let mut values = HashMap::new();
+        document
+    }
 
-        for hash in groups {
-            for (k, v) in hash {
-                values.insert(k, v);
-            }
-        }
+    pub(crate) async fn save(&self, document: &DocumentReq) -> Result<(), Error> {
+        let timestamp = Utc::now().timestamp().to_string();
+        let mut sk = String::from("DOCUMENT#");
+        sk.push_str(&timestamp);
 
-        values
+        let pk = AttributeValue::S("document".to_string());
+        let sk = AttributeValue::S(sk);
+        let title = AttributeValue::S(document.title.clone());
+        let updated_by = AttributeValue::S(timestamp.clone());
+        let created_by = AttributeValue::S(timestamp.clone());
+        let description = AttributeValue::S(String::from(""));
+
+        self.client
+            .put_item()
+            .table_name(&self.table_name)
+            .item(PK, pk)
+            .item(SK, sk)
+            .item(TITLE, title)
+            .item(UPDATED_BY, updated_by)
+            .item(CREATED, created_by)
+            .item(DESCRIPTION, description)
+            .send()
+            .await
+            .unwrap();
+        Ok(())
     }
 }

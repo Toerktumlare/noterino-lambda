@@ -1,7 +1,6 @@
 use aws_sdk_dynamodb::Client;
 use lambda_http::{run, service_fn, Body, Error, Request, Response};
 use router::RouterDelegate;
-use tokio_stream::StreamExt;
 
 mod config;
 mod repositories;
@@ -19,19 +18,12 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn list_tables(client: &Client) -> Result<Vec<String>, Error> {
-    let paginator = client.list_tables().into_paginator().items().send();
-    let table_names = paginator.collect::<Result<Vec<_>, _>>().await?;
-    Ok(table_names)
-}
-
 async fn handler(event: Request) -> Result<Response<Body>, Error> {
     let config = config::load_config().await;
     let client = Client::new(&config);
-    let (parts, _) = event.into_parts();
 
     let router = RouterDelegate::new(client);
-    let response = router.handle(&parts).await;
+    let response = router.handle(event).await;
 
     Ok(response)
 }

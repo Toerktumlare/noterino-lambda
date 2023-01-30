@@ -3,31 +3,36 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use aws_sdk_dynamodb::model::AttributeValue;
+use aws_sdk_dynamodb::{model::AttributeValue, Error};
 
 use multimap::MultiMap;
-use nanoserde::SerJson;
+use nanoserde::{SerJson, DeJson};
 
 use crate::repositories::DatabaseRepository;
 
-const PK: &str = "PK";
-const SK: &str = "SK";
-const TITLE: &str = "title";
-const CREATED: &str = "created";
-const PARENT: &str = "parent";
-const UPDATED_BY: &str = "updatedBy";
-const DESCRIPTION: &str = "description";
+pub const PK: &str = "PK";
+pub const SK: &str = "SK";
+pub const TITLE: &str = "title";
+pub const CREATED: &str = "created";
+pub const PARENT: &str = "parent";
+pub const UPDATED_BY: &str = "updatedBy";
+pub const DESCRIPTION: &str = "description";
 
-#[derive(Clone, SerJson)]
+#[derive(Clone, SerJson, DeJson)]
 pub struct Document {
     pub pk: String,
     pub sk: String,
-    title: String,
+    pub title: String,
     description: String,
     created: u32,
     #[nserde(rename = "updatedBy")]
     updated_by: String,
     groups: Vec<Group>,
+}
+
+#[derive(Clone, SerJson, DeJson)]
+pub struct DocumentReq {
+    pub title: String,
 }
 
 impl Document {
@@ -73,7 +78,7 @@ impl From<HashMap<String, AttributeValue>> for Document {
     }
 }
 
-#[derive(SerJson, Clone)]
+#[derive(SerJson, DeJson, Clone)]
 pub struct Group {
     pub sk: String,
     title: String,
@@ -112,7 +117,7 @@ impl From<&HashMap<String, AttributeValue>> for Group {
     }
 }
 
-#[derive(SerJson, Clone)]
+#[derive(SerJson, DeJson, Clone)]
 pub struct Note {
     title: String,
     created: u32,
@@ -190,13 +195,18 @@ impl DocumentService {
         }
     }
 
-    pub async fn list_all(&self) -> Documents {
+    pub(crate) async fn list_all(&self) -> Documents {
         let items = self.database_repository.list_all().await;
         Documents::from(items)
     }
 
-    pub(crate) async fn fetch_by_id(&self, id: &str) -> Document {
+    pub(crate) async fn fetch_by_id(&self, id: &str) -> Documents {
         let item = self.database_repository.fetch_by_id(id).await;
-        Document::from(item)
+        Documents::from(item)
+    }
+
+    pub(crate) async fn save(&self, document: &DocumentReq) -> Result<(), Error> {
+        self.database_repository.save(document).await.unwrap();
+        Ok(())
     }
 }
