@@ -2,11 +2,10 @@ use std::collections::HashMap;
 
 use aws_sdk_dynamodb::{model::AttributeValue, Client, Error};
 use chrono::Utc;
-use lambda_http::http::header::LAST_MODIFIED;
 
 use crate::{
     controllers::{DocumentReq, GroupReq},
-    services::{CREATED, DESCRIPTION, LAST_UPDATED, PARENT, PK, SK, TITLE, UPDATED_BY},
+    services::{CREATED, DESCRIPTION, LAST_UPDATED, PARENT, PK, SK, TITLE},
 };
 
 pub struct DatabaseRepository {
