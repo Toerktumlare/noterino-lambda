@@ -2,8 +2,12 @@ use std::collections::HashMap;
 
 use aws_sdk_dynamodb::{model::AttributeValue, Client, Error};
 use chrono::Utc;
+use lambda_http::http::header::LAST_MODIFIED;
 
-use crate::services::{DocumentReq, CREATED, DESCRIPTION, PK, SK, TITLE, UPDATED_BY};
+use crate::{
+    controllers::{DocumentReq, GroupReq},
+    services::{CREATED, DESCRIPTION, LAST_UPDATED, PARENT, PK, SK, TITLE, UPDATED_BY},
+};
 
 pub struct DatabaseRepository {
     client: Client,
@@ -88,16 +92,16 @@ impl DatabaseRepository {
     }
 
     pub(crate) async fn save(&self, document: &DocumentReq) -> Result<(), Error> {
-        let timestamp = Utc::now().timestamp().to_string();
+        let timestamp = Utc::now().timestamp();
         let mut sk = String::from("DOCUMENT#");
-        sk.push_str(&timestamp);
+        sk.push_str(&timestamp.to_string());
 
         let pk = AttributeValue::S("document".to_string());
         let sk = AttributeValue::S(sk);
         let title = AttributeValue::S(document.title.clone());
-        let updated_by = AttributeValue::S(timestamp.clone());
-        let created_by = AttributeValue::S(timestamp.clone());
-        let description = AttributeValue::S(String::from(""));
+        let created = AttributeValue::N(timestamp.to_string());
+        let last_updated = AttributeValue::S(timestamp.to_string());
+        let description = AttributeValue::S(document.description.clone());
 
         self.client
             .put_item()
@@ -105,9 +109,48 @@ impl DatabaseRepository {
             .item(PK, pk)
             .item(SK, sk)
             .item(TITLE, title)
-            .item(UPDATED_BY, updated_by)
-            .item(CREATED, created_by)
+            .item(CREATED, created)
+            .item(LAST_UPDATED, last_updated)
             .item(DESCRIPTION, description)
+            .send()
+            .await
+            .unwrap();
+
+        if !document.groups.is_empty() {
+            for mut group in document.groups.iter().cloned() {
+                group.created = timestamp;
+                self.save_group(&group).await.unwrap();
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) async fn save_group(&self, group: &GroupReq) -> Result<(), Error> {
+        let mut sk = String::from("GROUP#");
+        sk.push_str(&group.created.to_string());
+
+        let mut parent = String::from("DOCUMENT#");
+        parent.push_str(&group.created.to_string());
+
+        let pk = AttributeValue::S("group".to_string());
+        let sk = AttributeValue::S(sk);
+        let title = AttributeValue::S(group.title.clone());
+        let created = AttributeValue::N(group.created.to_string());
+        let last_updated = AttributeValue::N(group.created.to_string());
+        let description = AttributeValue::S(group.description.clone());
+        let parent = AttributeValue::S(parent);
+
+        self.client
+            .put_item()
+            .table_name(&self.table_name)
+            .item(PK, pk)
+            .item(SK, sk)
+            .item(TITLE, title)
+            .item(CREATED, created)
+            .item(LAST_UPDATED, last_updated)
+            .item(DESCRIPTION, description)
+            .item(PARENT, parent)
             .send()
             .await
             .unwrap();

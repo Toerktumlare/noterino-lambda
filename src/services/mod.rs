@@ -3,12 +3,10 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use aws_sdk_dynamodb::{model::AttributeValue, Error};
+use aws_sdk_dynamodb::model::AttributeValue;
 
 use multimap::MultiMap;
 use nanoserde::{DeJson, SerJson};
-
-use crate::repositories::DatabaseRepository;
 
 pub const PK: &str = "PK";
 pub const SK: &str = "SK";
@@ -16,7 +14,10 @@ pub const TITLE: &str = "title";
 pub const CREATED: &str = "created";
 pub const PARENT: &str = "parent";
 pub const UPDATED_BY: &str = "updatedBy";
+pub const LAST_UPDATED: &str = "lastUpdated";
 pub const DESCRIPTION: &str = "description";
+
+pub mod documentService;
 
 #[derive(Clone, SerJson, DeJson)]
 pub struct Document {
@@ -24,15 +25,10 @@ pub struct Document {
     pub sk: String,
     pub title: String,
     description: String,
-    created: u32,
+    created: i64,
     #[nserde(rename = "updatedBy")]
     updated_by: String,
     groups: Vec<Group>,
-}
-
-#[derive(Clone, SerJson, DeJson)]
-pub struct DocumentReq {
-    pub title: String,
 }
 
 impl Document {
@@ -41,7 +37,7 @@ impl Document {
         sk: String,
         title: String,
         description: String,
-        created: u32,
+        created: i64,
         updated_by: String,
     ) -> Self {
         let groups = Vec::default();
@@ -68,7 +64,7 @@ impl From<HashMap<String, AttributeValue>> for Document {
         let title = group_entity[TITLE].as_s().unwrap().to_owned();
         let updated_by = group_entity[UPDATED_BY].as_s().unwrap().to_owned();
         let description = group_entity[DESCRIPTION].as_s().unwrap().to_owned();
-        let created: u32 = group_entity[CREATED]
+        let created: i64 = group_entity[CREATED]
             .as_n()
             .unwrap()
             .clone()
@@ -181,32 +177,5 @@ impl From<Vec<HashMap<String, AttributeValue>>> for Documents {
             }
         }
         documents
-    }
-}
-
-pub struct DocumentService {
-    database_repository: DatabaseRepository,
-}
-
-impl DocumentService {
-    pub fn new(database_repository: DatabaseRepository) -> Self {
-        Self {
-            database_repository,
-        }
-    }
-
-    pub(crate) async fn list_all(&self) -> Documents {
-        let items = self.database_repository.list_all().await;
-        Documents::from(items)
-    }
-
-    pub(crate) async fn fetch_by_id(&self, id: &str) -> Documents {
-        let item = self.database_repository.fetch_by_id(id).await;
-        Documents::from(item)
-    }
-
-    pub(crate) async fn save(&self, document: &DocumentReq) -> Result<(), Error> {
-        self.database_repository.save(document).await.unwrap();
-        Ok(())
     }
 }

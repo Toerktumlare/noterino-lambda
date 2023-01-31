@@ -3,10 +3,9 @@ use lambda_http::{http::Method, Body, Request, Response};
 use matchit::{Match, Router};
 use nanoserde::{DeJson, SerJson};
 
-use crate::{
-    repositories::DatabaseRepository,
-    services::{DocumentReq, DocumentService},
-};
+use crate::controllers::DocumentReq;
+use crate::repositories::DatabaseRepository;
+use crate::services::documentService::DocumentService;
 
 pub enum HttpRoute {
     Documents,
@@ -40,7 +39,7 @@ impl RouterDelegate {
         let match_res = self.router.at(head.uri.path());
         match match_res {
             Ok(m) => self.resolve(m, &head.method, body).await,
-            Err(_) => todo!(),
+            Err(_) => Response::builder().status(404).body(Body::Empty).unwrap(),
         }
     }
 
@@ -62,20 +61,15 @@ impl RouterDelegate {
                         .body(body.into())
                         .unwrap()
                 }
-                Method::POST => {
-                    let body_string = match body {
-                        Body::Text(v) => v,
-                        _ => todo!(),
-                    };
-                    let document: DocumentReq = DeJson::deserialize_json(&body_string).unwrap();
-                    self.document_service.save(&document).await.unwrap();
-                    Response::builder()
-                        .status(200)
-                        .header("content-type", "application/json")
-                        .body(Body::Empty)
-                        .unwrap()
-                }
-                _ => todo!(),
+                Method::POST => match body {
+                    Body::Text(body) => {
+                        let document: DocumentReq = DeJson::deserialize_json(&body).unwrap();
+                        self.document_service.save(&document).await.unwrap();
+                        return Response::builder().status(200).body(Body::Empty).unwrap();
+                    }
+                    _ => Response::builder().status(400).body(Body::Empty).unwrap(),
+                },
+                _ => Response::builder().status(405).body(Body::Empty).unwrap(),
             },
             HttpRoute::Document => match method {
                 &Method::GET => {
@@ -89,7 +83,7 @@ impl RouterDelegate {
                         .body(body.into())
                         .unwrap()
                 }
-                _ => todo!(),
+                _ => Response::builder().status(405).body(Body::Empty).unwrap(),
             },
         };
         response

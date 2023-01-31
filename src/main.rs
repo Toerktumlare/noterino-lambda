@@ -3,6 +3,7 @@ use lambda_http::{run, service_fn, Body, Error, Request, Response};
 use router::RouterDelegate;
 
 mod config;
+mod controllers;
 mod repositories;
 mod router;
 mod services;
