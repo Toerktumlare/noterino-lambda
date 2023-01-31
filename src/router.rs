@@ -1,12 +1,12 @@
 use aws_sdk_dynamodb::Client;
-use lambda_http::{
-    http::Method,
-    Body, Response, Request,
-};
+use lambda_http::{http::Method, Body, Request, Response};
 use matchit::{Match, Router};
-use nanoserde::{SerJson, DeJson};
+use nanoserde::{DeJson, SerJson};
 
-use crate::{repositories::DatabaseRepository, services::{DocumentService, DocumentReq}};
+use crate::{
+    repositories::DatabaseRepository,
+    services::{DocumentReq, DocumentService},
+};
 
 pub enum HttpRoute {
     Documents,
@@ -44,7 +44,12 @@ impl RouterDelegate {
         }
     }
 
-    async fn resolve<'a>(&self, m: Match<'a, 'a, &HttpRoute>, method: &Method, body: Body) -> Response<Body> {
+    async fn resolve<'a>(
+        &self,
+        m: Match<'a, 'a, &HttpRoute>,
+        method: &Method,
+        body: Body,
+    ) -> Response<Body> {
         let value = m.value;
         let response = match value {
             HttpRoute::Documents => match *method {
@@ -56,7 +61,7 @@ impl RouterDelegate {
                         .header("content-type", "application/json")
                         .body(body.into())
                         .unwrap()
-                },
+                }
                 Method::POST => {
                     let body_string = match body {
                         Body::Text(v) => v,
@@ -69,8 +74,7 @@ impl RouterDelegate {
                         .header("content-type", "application/json")
                         .body(Body::Empty)
                         .unwrap()
-
-                },
+                }
                 _ => todo!(),
             },
             HttpRoute::Document => match method {

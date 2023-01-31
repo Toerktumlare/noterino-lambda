@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use aws_sdk_dynamodb::{model::AttributeValue, Client, Error};
 use chrono::Utc;
 
-use crate::services::{PK, SK, TITLE, DocumentReq, UPDATED_BY, CREATED, DESCRIPTION};
+use crate::services::{DocumentReq, CREATED, DESCRIPTION, PK, SK, TITLE, UPDATED_BY};
 
 pub struct DatabaseRepository {
     client: Client,

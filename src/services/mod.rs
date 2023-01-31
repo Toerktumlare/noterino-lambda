@@ -6,7 +6,7 @@ use std::{
 use aws_sdk_dynamodb::{model::AttributeValue, Error};
 
 use multimap::MultiMap;
-use nanoserde::{SerJson, DeJson};
+use nanoserde::{DeJson, SerJson};
 
 use crate::repositories::DatabaseRepository;
 
