@@ -5,7 +5,7 @@ use nanoserde::{DeJson, SerJson};
 
 use crate::controllers::DocumentReq;
 use crate::repositories::DatabaseRepository;
-use crate::services::documentService::DocumentService;
+use crate::services::document_service::DocumentService;
 
 pub enum HttpRoute {
     Documents,
