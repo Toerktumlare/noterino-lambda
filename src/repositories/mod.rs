@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
 use aws_sdk_dynamodb::{
-    client::fluent_builders::TransactWriteItems,
     model::{AttributeValue, Put, TransactWriteItem},
     Client, Error,
 };
 use chrono::Utc;
 
 use crate::{
-    controllers::{DocumentReq, GroupReq},
+    controllers::DocumentReq,
     services::{CREATED, DESCRIPTION, LAST_UPDATED, PARENT, PK, SK, TITLE, UPDATED_BY},
 };
 
