@@ -1,11 +1,15 @@
 use std::collections::HashMap;
 
-use aws_sdk_dynamodb::{model::AttributeValue, Client, Error};
+use aws_sdk_dynamodb::{
+    client::fluent_builders::TransactWriteItems,
+    model::{AttributeValue, Put, TransactWriteItem},
+    Client, Error,
+};
 use chrono::Utc;
 
 use crate::{
     controllers::{DocumentReq, GroupReq},
-    services::{CREATED, DESCRIPTION, LAST_UPDATED, PARENT, PK, SK, TITLE},
+    services::{CREATED, DESCRIPTION, LAST_UPDATED, PARENT, PK, SK, TITLE, UPDATED_BY},
 };
 
 pub struct DatabaseRepository {
@@ -100,59 +104,65 @@ impl DatabaseRepository {
         let title = AttributeValue::S(document.title.clone());
         let created = AttributeValue::N(timestamp.to_string());
         let last_updated = AttributeValue::S(timestamp.to_string());
+        let updated_by = AttributeValue::S("NITROGEN:Thomas".to_string());
         let description = AttributeValue::S(document.description.clone());
 
-        self.client
-            .put_item()
+        let document_item = Put::builder()
             .table_name(&self.table_name)
             .item(PK, pk)
             .item(SK, sk)
             .item(TITLE, title)
             .item(CREATED, created)
             .item(LAST_UPDATED, last_updated)
+            .item(UPDATED_BY, updated_by)
             .item(DESCRIPTION, description)
-            .send()
-            .await
-            .unwrap();
+            .build();
+        let document_item = TransactWriteItem::builder().put(document_item).build();
+
+        let mut transactions = Vec::new();
+        transactions.push(document_item);
 
         if !document.groups.is_empty() {
-            for mut group in document.groups.iter().cloned() {
-                group.created = timestamp;
-                self.save_group(&group).await.unwrap();
+            for group in document.groups.iter() {
+                let mut group_sk = String::from("GROUP#");
+                group_sk.push_str(&timestamp.to_string());
+
+                let mut parent = String::from("DOCUMENT#");
+                parent.push_str(&timestamp.to_string());
+
+                let pk = AttributeValue::S("group".to_string());
+                let sk = AttributeValue::S(group_sk.clone());
+                let title = AttributeValue::S(group.title.clone());
+                let created = AttributeValue::N(group.created.to_string());
+                let last_updated = AttributeValue::N(group.created.to_string());
+                let updated_by = AttributeValue::S("NITROGEN:Thomas".to_string());
+                let description = AttributeValue::S(group.description.clone());
+                let parent = AttributeValue::S(parent.clone());
+
+                let group_item = Put::builder()
+                    .table_name(&self.table_name)
+                    .item(PK, pk)
+                    .item(SK, sk)
+                    .item(TITLE, title)
+                    .item(CREATED, created)
+                    .item(LAST_UPDATED, last_updated)
+                    .item(UPDATED_BY, updated_by)
+                    .item(DESCRIPTION, description)
+                    .item(PARENT, parent)
+                    .build();
+
+                let transaction_item = TransactWriteItem::builder().put(group_item).build();
+                transactions.push(transaction_item);
             }
         }
 
-        Ok(())
-    }
-
-    pub(crate) async fn save_group(&self, group: &GroupReq) -> Result<(), Error> {
-        let mut sk = String::from("GROUP#");
-        sk.push_str(&group.created.to_string());
-
-        let mut parent = String::from("DOCUMENT#");
-        parent.push_str(&group.created.to_string());
-
-        let pk = AttributeValue::S("group".to_string());
-        let sk = AttributeValue::S(sk);
-        let title = AttributeValue::S(group.title.clone());
-        let created = AttributeValue::N(group.created.to_string());
-        let last_updated = AttributeValue::N(group.created.to_string());
-        let description = AttributeValue::S(group.description.clone());
-        let parent = AttributeValue::S(parent);
-
         self.client
-            .put_item()
-            .table_name(&self.table_name)
-            .item(PK, pk)
-            .item(SK, sk)
-            .item(TITLE, title)
-            .item(CREATED, created)
-            .item(LAST_UPDATED, last_updated)
-            .item(DESCRIPTION, description)
-            .item(PARENT, parent)
+            .transact_write_items()
+            .set_transact_items(Some(transactions))
             .send()
             .await
             .unwrap();
+
         Ok(())
     }
 }

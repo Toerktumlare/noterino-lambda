@@ -7,6 +7,9 @@ pub struct DocumentReq {
     pub title: String,
 
     #[nserde(default)]
+    pub updated_by: String,
+
+    #[nserde(default)]
     pub description: String,
 
     #[nserde(default)]
@@ -25,6 +28,9 @@ pub struct GroupReq {
 
     #[nserde(default)]
     pub created_by: String,
+
+    #[nserde(default)]
+    pub updated_by: String,
 
     #[nserde(default)]
     pub notes: Vec<Note>,
