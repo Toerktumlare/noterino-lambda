@@ -1,7 +1,8 @@
 use aws_sdk_dynamodb::Client;
 use lambda_http::{run, service_fn, Body, Error, Request, Response};
-use repositories::DatabaseRepository;
 use router::RouterDelegate;
+
+use crate::repositories::document_repository::DatabaseRepository;
 
 mod config;
 mod controllers;

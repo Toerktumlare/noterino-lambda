@@ -1,14 +1,14 @@
-use lambda_http::Error;
+use lambda_http::{http::Result, Body, Response};
 
-use crate::{controllers::DocumentReq, repositories::DatabaseRepository};
+use crate::{repositories::document_repository::DatabaseRepository, services::Documents};
 
-use super::Documents;
+use super::DocumentReq;
 
-pub struct DocumentService<'a> {
+pub struct DocumentController<'a> {
     database_repository: &'a DatabaseRepository,
 }
 
-impl<'a> DocumentService<'a> {
+impl<'a> DocumentController<'a> {
     pub fn new(database_repository: &'a DatabaseRepository) -> Self {
         Self {
             database_repository,
@@ -25,8 +25,9 @@ impl<'a> DocumentService<'a> {
         Documents::from(item)
     }
 
-    pub(crate) async fn save(&self, document: &DocumentReq) -> Result<(), Error> {
+    pub(crate) async fn save(&self, document: &DocumentReq) -> Result<Response<Body>> {
         self.database_repository.save(document).await.unwrap();
-        Ok(())
+        let response = Response::builder().status(200).body(Body::Empty).unwrap();
+        Ok(response)
     }
 }

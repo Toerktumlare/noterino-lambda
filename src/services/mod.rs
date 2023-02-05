@@ -17,7 +17,6 @@ pub const UPDATED_BY: &str = "updatedBy";
 pub const LAST_UPDATED: &str = "lastUpdated";
 pub const DESCRIPTION: &str = "description";
 
-pub mod document_service;
 pub mod notes_service;
 
 #[derive(Clone, SerJson, DeJson)]

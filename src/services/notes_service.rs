@@ -1,8 +1,9 @@
 use chrono::Utc;
-use lambda_http::Error;
+
+use lambda_http::{http::Result, Body, Response};
 use nanoserde::{DeJson, SerJson};
 
-use crate::{controllers::NoteReq, repositories::DatabaseRepository};
+use crate::{controllers::NoteReq, repositories::document_repository::DatabaseRepository};
 
 use super::SK;
 
@@ -46,7 +47,7 @@ impl<'a> NotesService<'a> {
         doc_id: i32,
         group_id: i32,
         note_req: &NoteReq,
-    ) -> Result<(), Error> {
+    ) -> Result<Response<Body>> {
         let documents = self
             .database_repository
             .fetch_document_by_id(&doc_id.to_string())
@@ -72,6 +73,12 @@ impl<'a> NotesService<'a> {
             .unwrap()
             .to_string();
         self.database_repository.save_note(&note).await.unwrap();
-        Ok(())
+
+        let response = Response::builder()
+            .status(200)
+            .header("content-type", "application/json")
+            .body(Body::Empty)
+            .unwrap();
+        Ok(response)
     }
 }

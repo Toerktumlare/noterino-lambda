@@ -1,5 +1,7 @@
 use nanoserde::{DeJson, SerJson};
 
+pub mod document_controller;
+
 #[derive(Clone, SerJson, DeJson)]
 pub struct DocumentReq {
     pub title: String,
