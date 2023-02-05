@@ -1,5 +1,6 @@
 use aws_sdk_dynamodb::Client;
 use lambda_http::{run, service_fn, Body, Error, Request, Response};
+use repositories::DatabaseRepository;
 use router::RouterDelegate;
 
 mod config;
@@ -23,7 +24,9 @@ async fn handler(event: Request) -> Result<Response<Body>, Error> {
     let config = config::load_config().await;
     let client = Client::new(&config);
 
-    let router = RouterDelegate::new(client);
+    dbg!(&event);
+    let database = DatabaseRepository::from_client(client);
+    let router = RouterDelegate::new(&database);
     let response = router.handle(event).await;
 
     Ok(response)

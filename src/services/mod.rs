@@ -18,6 +18,7 @@ pub const LAST_UPDATED: &str = "lastUpdated";
 pub const DESCRIPTION: &str = "description";
 
 pub mod document_service;
+pub mod notes_service;
 
 #[derive(Clone, SerJson, DeJson)]
 pub struct Document {
@@ -115,8 +116,8 @@ impl From<&HashMap<String, AttributeValue>> for Group {
 
 #[derive(SerJson, DeJson, Clone)]
 pub struct Note {
-    title: String,
-    created: u32,
+    pub title: String,
+    pub created: u32,
 }
 
 impl From<&HashMap<String, AttributeValue>> for Note {

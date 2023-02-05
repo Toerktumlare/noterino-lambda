@@ -4,12 +4,12 @@ use crate::{controllers::DocumentReq, repositories::DatabaseRepository};
 
 use super::Documents;
 
-pub struct DocumentService {
-    database_repository: DatabaseRepository,
+pub struct DocumentService<'a> {
+    database_repository: &'a DatabaseRepository,
 }
 
-impl DocumentService {
-    pub fn new(database_repository: DatabaseRepository) -> Self {
+impl<'a> DocumentService<'a> {
+    pub fn new(database_repository: &'a DatabaseRepository) -> Self {
         Self {
             database_repository,
         }

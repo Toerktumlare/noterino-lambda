@@ -1,7 +1,5 @@
 use nanoserde::{DeJson, SerJson};
 
-use crate::services::Note;
-
 #[derive(Clone, SerJson, DeJson)]
 pub struct DocumentReq {
     pub title: String,
@@ -33,5 +31,22 @@ pub struct GroupReq {
     pub updated_by: String,
 
     #[nserde(default)]
-    pub notes: Vec<Note>,
+    pub notes: Vec<NoteReq>,
+}
+
+#[derive(Clone, SerJson, DeJson)]
+pub struct NoteReq {
+    pub title: String,
+
+    #[nserde(default)]
+    pub description: String,
+
+    #[nserde(default)]
+    pub created: i64,
+
+    #[nserde(default)]
+    pub created_by: String,
+
+    #[nserde(default)]
+    pub updated_by: String,
 }

@@ -25,21 +25,6 @@ Resources:
         AllowHeaders: "'content-type'"
         AllowOrigin: "'*'"
         AllowCredentials: false
-      Auth:
-        ApiKeyRequired: true
-        UsagePlan:
-          UsagePlanName: Basic
-          CreateUsagePlan: PER_API
-          Description: "Usage plan for noterino"
-          Quota:
-            Limit: 500
-            Period: MONTH
-          Throttle:
-            BurstLimit: 50
-            RateLimit: 20
-          Tags:
-            - Key: noterino
-              Value: usageplan
 
   NoterinoLambda:
     Type: 'AWS::Serverless::Function'

@@ -1,26 +1,28 @@
-use aws_sdk_dynamodb::Client;
 use lambda_http::{http::Method, Body, Request, Response};
 use matchit::{Match, Router};
 use nanoserde::{DeJson, SerJson};
 
-use crate::controllers::DocumentReq;
+use crate::controllers::{DocumentReq, NoteReq};
 use crate::repositories::DatabaseRepository;
 use crate::services::document_service::DocumentService;
+use crate::services::notes_service::NotesService;
 
 pub enum HttpRoute {
     Documents,
     Document,
+    Group,
 }
 
-pub struct RouterDelegate {
+pub struct RouterDelegate<'a> {
     router: Router<HttpRoute>,
-    document_service: DocumentService,
+    document_service: DocumentService<'a>,
+    notes_service: NotesService<'a>,
 }
 
-impl RouterDelegate {
-    pub(crate) fn new(client: Client) -> Self {
-        let database = DatabaseRepository::from_client(client);
-        let document_service = DocumentService::new(database);
+impl<'a> RouterDelegate<'a> {
+    pub(crate) fn new(database: &'a DatabaseRepository) -> Self {
+        let document_service = DocumentService::new(&database);
+        let notes_service = NotesService::new(&database);
         let mut router = Router::new();
         router
             .insert("/api/notes/documents", HttpRoute::Documents)
@@ -28,22 +30,27 @@ impl RouterDelegate {
         router
             .insert("/api/notes/documents/:id", HttpRoute::Document)
             .unwrap();
+        router
+            .insert("/api/notes/documents/:id/groups/:groupId", HttpRoute::Group)
+            .unwrap();
         Self {
             router,
             document_service,
+            notes_service,
         }
     }
 
     pub(crate) async fn handle(&self, event: Request) -> Response<Body> {
         let (head, body) = event.into_parts();
         let match_res = self.router.at(head.uri.path());
+        dbg!(body.clone());
         match match_res {
             Ok(m) => self.resolve(m, &head.method, body).await,
             Err(_) => Response::builder().status(404).body(Body::Empty).unwrap(),
         }
     }
 
-    async fn resolve<'a>(
+    async fn resolve(
         &self,
         m: Match<'a, 'a, &HttpRoute>,
         method: &Method,
@@ -83,6 +90,27 @@ impl RouterDelegate {
                         .body(body.into())
                         .unwrap()
                 }
+                _ => Response::builder().status(405).body(Body::Empty).unwrap(),
+            },
+            HttpRoute::Group => match *method {
+                Method::POST => match body {
+                    Body::Text(body) => {
+                        dbg!(body.clone());
+                        let doc_id: i32 = m.params.get("id").unwrap().parse().unwrap();
+                        let group_id: i32 = m.params.get("groupId").unwrap().parse().unwrap();
+                        let note_req: NoteReq = DeJson::deserialize_json(&body).unwrap();
+                        self.notes_service
+                            .save(doc_id, group_id, &note_req)
+                            .await
+                            .unwrap();
+                        Response::builder()
+                            .status(200)
+                            .header("content-type", "application/json")
+                            .body(Body::Empty)
+                            .unwrap()
+                    }
+                    _ => Response::builder().status(400).body(Body::Empty).unwrap(),
+                },
                 _ => Response::builder().status(405).body(Body::Empty).unwrap(),
             },
         };

@@ -8,7 +8,9 @@ use chrono::Utc;
 
 use crate::{
     controllers::DocumentReq,
-    services::{CREATED, DESCRIPTION, LAST_UPDATED, PARENT, PK, SK, TITLE, UPDATED_BY},
+    services::{
+        notes_service::Note, CREATED, DESCRIPTION, LAST_UPDATED, PARENT, PK, SK, TITLE, UPDATED_BY,
+    },
 };
 
 pub struct DatabaseRepository {
@@ -161,6 +163,87 @@ impl DatabaseRepository {
             .send()
             .await
             .unwrap();
+
+        Ok(())
+    }
+
+    pub(crate) async fn fetch_document_by_id(
+        &self,
+        id: &str,
+    ) -> Vec<HashMap<String, AttributeValue>> {
+        let mut sk = String::from("DOCUMENT#");
+        sk.push_str(id);
+        let mut keys = HashMap::new();
+        keys.insert("PK".to_string(), AttributeValue::S("document".to_string()));
+        keys.insert("SK".to_string(), AttributeValue::S(sk.clone()));
+        let response = self
+            .client
+            .get_item()
+            .table_name(&self.table_name)
+            .set_key(Some(keys))
+            .consistent_read(true)
+            .send()
+            .await
+            .unwrap();
+
+        let mut documents = Vec::new();
+        documents.push(response.item().unwrap().to_owned());
+        documents
+    }
+
+    pub(crate) async fn fetch_group_by_id(
+        &self,
+        group_id: i32,
+    ) -> Vec<HashMap<String, AttributeValue>> {
+        let group_id = group_id.to_string();
+        let mut sk = String::from("GROUP#");
+        sk.push_str(&group_id);
+
+        let mut keys = HashMap::new();
+        keys.insert("PK".to_string(), AttributeValue::S("group".to_string()));
+        keys.insert("SK".to_string(), AttributeValue::S(sk));
+
+        let response = self
+            .client
+            .get_item()
+            .table_name(&self.table_name)
+            .set_key(Some(keys))
+            .consistent_read(true)
+            .send()
+            .await
+            .unwrap();
+        let mut groups = Vec::new();
+        groups.push(response.item().unwrap().to_owned());
+        groups
+    }
+
+    pub(crate) async fn save_note(&self, note: &Note) -> Result<(), Error> {
+        let mut note_sk = String::from("NOTE#");
+        note_sk.push_str(&note.created.to_string());
+
+        let pk = AttributeValue::S("note".to_string());
+        let sk = AttributeValue::S(note_sk.clone());
+        let title = AttributeValue::S(note.title.clone());
+        let created = AttributeValue::N(note.created.to_string());
+        let last_updated = AttributeValue::N(note.created.to_string());
+        let updated_by = AttributeValue::S(note.updated_by.clone());
+        let description = AttributeValue::S(note.description.clone());
+        let parent = AttributeValue::S(note.parent.clone());
+
+        let request = self
+            .client
+            .put_item()
+            .table_name(&self.table_name)
+            .item(PK, pk)
+            .item(SK, sk)
+            .item(TITLE, title)
+            .item(CREATED, created)
+            .item(LAST_UPDATED, last_updated)
+            .item(UPDATED_BY, updated_by)
+            .item(DESCRIPTION, description)
+            .item(PARENT, parent);
+
+        request.send().await;
 
         Ok(())
     }
